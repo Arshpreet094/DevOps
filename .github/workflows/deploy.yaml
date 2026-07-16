@@ -21,6 +21,9 @@ jobs:
       - name: Install Dependencies
         run: npm install
 
+      - name: Run Tests
+        run: npm test
+
   deploy:
     needs: build
     runs-on: ubuntu-latest
@@ -28,7 +31,6 @@ jobs:
     steps:
       - name: Deploy to EC2 via SSH
         uses: appleboy/ssh-action@v1.0.3
-
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
@@ -36,6 +38,15 @@ jobs:
 
           script: |
             cd ~/DevOps
+
             git pull origin main
+
             npm install
-            pm2 restart all
+
+            if pm2 describe DevOps > /dev/null; then
+              pm2 restart DevOps
+            else
+              pm2 start server.js --name DevOps
+            fi
+
+            pm2 save
